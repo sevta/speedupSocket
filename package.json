@@ -5,11 +5,13 @@
   "main": "index.js",
   "scripts": {
     "start": "parcel src/index.html --no-cache --no-hmr",
+    "build": "parcel build src/index.html",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "casual": "^1.5.19",
     "express": "^4.16.4",
     "faker": "^4.1.0",
     "jquery": "^3.3.1",

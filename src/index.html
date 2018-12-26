@@ -8,11 +8,16 @@
       href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css"
       rel="stylesheet"
     />
+    <style></style>
 
     <title>Document</title>
   </head>
   <body>
     <div id="app"></div>
+    <!-- speed up  -->
+    <div class="speedup-game-container">
+      <div class="inner-speedup-game"></div>
+    </div>
     <div
       class="speedup-popup bg-black fixed pin-y pin-x flex items-center justify-center"
     >
@@ -24,7 +29,7 @@
         <div class="user-list-container flex flex-col"></div>
       </div>
     </div>
-    <div class="speedup-container">
+    <div class="speedup-room-container">
       <h1>hello</h1>
       <form class="speedup-inputroomcode-form">
         <input
@@ -38,6 +43,7 @@
         <button class="bg-teal text-white p-2 btn-join">join</button>
       </div>
     </div>
+    <!-- end -->
     <script>
       __REACT_DEVTOOLS_GLOBAL_HOOK__.inject = function() {};
     </script>

@@ -1,60 +1,68 @@
 import React, { Component } from "react";
 import { AppContext } from "../../utils/Provider";
-import "./style.scss";
+import PopupRoom from "./PopupRoom";
+import InputRoomCode from "./InputRoomCode";
 
 export default class Room extends Component {
   static contextType = AppContext;
 
-  closeRoom = () => {
-    const { state, socket, setState } = this.context;
-    if (state.isCreatorRoom) {
-      console.log("creator leave room");
-      setState({ createRoom: false, isCreatorRoom: false }, currState => {
-        socket.emit("creator leave room", {
-          roomID: currState.roomID
+  componentDidMount = () => {
+    const { socket } = this.context;
+    socket.on("first connect", data => {
+      console.log(data);
+    });
+  };
+
+  createRoom = () => {
+    const { setState, socket } = this.context;
+
+    let fakeId = Date.now();
+    console.log("fake id", fakeId);
+
+    setState(
+      { createRoom: true, roomID: fakeId, isCreatorRoom: true },
+      currState => {
+        socket.emit("create room", {
+          roomID: currState.roomID,
+          socketID: currState.socketID,
+          creatorRoom: currState.username
         });
-      });
-    } else {
-      console.log("user leave room", state.roomID);
-      setState({ createRoom: false, roomFound: false });
-      socket.emit("user leave room", {
-        roomID: state.roomID,
-        socketID: state.socketID
-      });
+      }
+    );
+  };
+
+  joinRoom = () => {
+    const { state, setState } = this.context;
+    setState({ toggleInputRoomCode: !state.toggleInputRoomCode });
+  };
+
+  renderRoom = () => {
+    const { state } = this.context;
+    if (state.createRoom || state.roomFound) {
+      return <PopupRoom />;
     }
   };
 
   render() {
     const { state } = this.context;
     return (
-      <div
-        className="room-container bg-black fixed pin-y pin-x flex items-center justify-center"
-        onClick={this.closeRoom}
-      >
-        <div className="inner-room p-3 rounded bg-white text-black">
-          <p>{state.roomID}</p>
-          <div className="users-container">
-            <UserList users={state.usersInRoom} />
-          </div>
-          {state.isCreatorRoom ? (
-            <button className="py-2 px-4 bg-blue py-2 px-4 text-sm rounded text-white">
-              start game
-            </button>
-          ) : (
-            <button className="py-2 px-4 bg-teal py-2 px-4 text-sm rounded text-white">
-              ready
-            </button>
-          )}
-        </div>
+      <div className="speedup-room">
+        <h1>hello {state.username}</h1>
+        {this.renderRoom()}
+        {state.toggleInputRoomCode && <InputRoomCode />}
+        <button
+          className="bg-teal py-2 px-4 rounded text-sm text-white"
+          onClick={this.createRoom}
+        >
+          create room
+        </button>
+        <button
+          className="bg-purple py-2 px-4 rounded text-sm text-white"
+          onClick={this.joinRoom}
+        >
+          join room
+        </button>
       </div>
     );
   }
-}
-
-function UserList({ users }) {
-  return users.map((user, i) => (
-    <div key={i + 1}>
-      <h4>{user.username || "waiting..."}</h4>
-    </div>
-  ));
 }

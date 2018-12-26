@@ -90097,262 +90097,309 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-var socket = _socket.default.connect("http://localhost:4200");
+(0, _jquery.default)(document).ready(function () {
+  var socket = _socket.default.connect("http://localhost:4200");
 
-var Room =
-/*#__PURE__*/
-function () {
-  function Room(props) {
-    _classCallCheck(this, Room);
+  var Room =
+  /*#__PURE__*/
+  function () {
+    function Room(props) {
+      _classCallCheck(this, Room);
 
-    this.data = {
-      username: _faker.default.name.findName(),
-      socketID: null,
-      roomID: null,
-      isCreator: false,
-      isCreatorRoom: false,
-      inRoom: false,
-      inGame: false,
-      roomFound: false,
-      usersInRoom: _toConsumableArray(Array(4).fill("waiting"))
-    };
-    this.data = Object.assign({}, this.data, props);
-  }
-
-  _createClass(Room, [{
-    key: "handleEvents",
-    value: function handleEvents() {
-      var _this = this;
-
-      var roomValue = "";
-      (0, _jquery.default)(".btn-create").on("click", function () {
-        (0, _jquery.default)(".speedup-popup").fadeIn("");
-
-        _this.createRoom();
-      });
-      (0, _jquery.default)(".speedup-popup").on("click", function () {
-        (0, _jquery.default)(".speedup-popup").fadeOut("");
-
-        _this.closePopupRoom();
-      });
-      (0, _jquery.default)(".inner-speedup-popup").on("click", function (e) {
-        e.stopPropagation();
-      });
-      (0, _jquery.default)(".btn-join").on("click", function () {
-        (0, _jquery.default)(".input-room-code").fadeToggle();
-      });
-      (0, _jquery.default)(".speedup-inputroomcode-form").on("submit", function (e) {
-        e.preventDefault();
-
-        _this.submitRoomCode(roomValue);
-      });
-      (0, _jquery.default)(".input-room-code").on("input", function (e) {
-        var value = e.target.value;
-        console.log(value);
-        roomValue = value;
-      });
+      this.data = {
+        username: _faker.default.name.findName(),
+        socketID: null,
+        roomID: null,
+        isCreator: false,
+        isCreatorRoom: false,
+        inRoom: false,
+        inGame: false,
+        roomFound: false,
+        isUserReady: false,
+        isGameReady: false,
+        usersInRoom: _toConsumableArray(Array(4).fill("waiting"))
+      };
+      this.data = Object.assign({}, this.data, props);
     }
-  }, {
-    key: "setData",
-    value: function setData(newData, cb) {
-      var prev = this.data;
-      console.log("setdata", this.data);
-      this.data = _objectSpread({}, this.data, newData);
 
-      if (cb) {
-        cb(prev);
+    _createClass(Room, [{
+      key: "handleEvents",
+      value: function handleEvents() {
+        var _this = this;
+
+        var roomValue = "";
+        (0, _jquery.default)(".btn-create").on("click", function () {
+          (0, _jquery.default)(".speedup-popup").fadeIn("");
+
+          _this.createRoom();
+        });
+        (0, _jquery.default)(".speedup-popup").on("click", function () {
+          (0, _jquery.default)(".speedup-popup").fadeOut("");
+
+          _this.closePopupRoom();
+        });
+        (0, _jquery.default)(".inner-speedup-popup").on("click", function (e) {
+          e.stopPropagation();
+        });
+        (0, _jquery.default)(".btn-join").on("click", function () {
+          (0, _jquery.default)(".input-room-code").fadeToggle();
+        });
+        (0, _jquery.default)(".speedup-inputroomcode-form").on("submit", function (e) {
+          e.preventDefault();
+
+          _this.submitRoomCode(roomValue);
+        });
+        (0, _jquery.default)(".input-room-code").on("input", function (e) {
+          var value = e.target.value;
+          console.log(value);
+          roomValue = value;
+        });
       }
-    }
-  }, {
-    key: "init",
-    value: function init() {
-      (0, _jquery.default)(".speedup-popup").hide();
-      (0, _jquery.default)(".input-room-code").hide();
-      this.handleSocket();
-      this.handleEvents();
-      console.log("init room", this.data);
-    }
-  }, {
-    key: "handleSocket",
-    value: function handleSocket() {
-      var _this2 = this;
+    }, {
+      key: "setData",
+      value: function setData(newData, cb) {
+        var prev = this.data;
+        console.log("setdata", this.data);
+        this.data = _objectSpread({}, this.data, newData);
 
-      socket.on("first connect", function (data) {
-        console.log(data);
-
-        _this2.setData({
-          socketID: data.socketID
-        }, function () {
-          console.log("set data", _this2.data);
-          socket.emit("reply connect", {
-            username: _this2.data.username,
-            socketID: _this2.data.socketID
-          });
-          console.log(_this2.data);
-        });
-      });
-      socket.on("room found", function (_ref) {
-        var roomID = _ref.roomID;
-        console.log("room found", roomID);
-
-        _this2.setData({
-          roomFound: true,
-          roomID: roomID
-        }, function () {
-          (0, _jquery.default)(".speedup-popup").fadeIn();
-          (0, _jquery.default)(".room-code").text(_this2.data.roomID);
-        });
-      });
-      socket.on("reply creator leave room", function () {
-        console.log("socket leave room");
-
-        _this2.setData({
-          roomID: null
-        }, function () {
-          (0, _jquery.default)(".speedup-popup").fadeOut();
-        });
-      });
-      socket.on("creator disconnect", function () {
-        console.log("creator disconnect");
-
-        _this2.setData({
-          roomID: null
-        }, function () {
-          (0, _jquery.default)(".speedup-popup").fadeOut();
-        });
-      });
-      socket.on("update users in room", function (_ref2) {
-        var users = _ref2.users;
-        console.log("user in room", users);
-        _this2.data.usersInRoom = _toConsumableArray(users).concat(_toConsumableArray(Array(_this2.data.usersInRoom.length - users.length).fill("waiting...")));
-        (0, _jquery.default)(".user-list-container").html("\n        ".concat(_this2.data.usersInRoom.map(function (user) {
-          return "\n            <div class=\"user-list\">".concat(user.username || "waiting", " ").concat(user.isReady ? "ready" : "", "</div>\n            ");
-        }).join(""), " \n          <button class=\"btn-start bg-teal text-white py-2 px-4\">\n            start game\n          </button>\n          <button class=\"btn-ready bg-red text-white py-2 px-4\">\n            ready\n          </button>\n      "));
-
-        if (!_this2.data.isCreatorRoom) {
-          (0, _jquery.default)(".btn-start").remove();
-          (0, _jquery.default)(".btn-ready").show();
-        } else {
-          (0, _jquery.default)(".btn-start").show();
-          (0, _jquery.default)(".btn-ready").remove();
+        if (cb) {
+          cb(prev);
         }
+      }
+    }, {
+      key: "init",
+      value: function init() {
+        (0, _jquery.default)(".speedup-popup").hide();
+        (0, _jquery.default)(".input-room-code").hide();
+        (0, _jquery.default)(".speedup-game-container").hide();
+        this.handleSocket();
+        this.handleEvents();
+        console.log("init room", this.data);
+      }
+    }, {
+      key: "handleSocket",
+      value: function handleSocket() {
+        var _this2 = this;
 
-        _this2.data.usersInRoom.map(function (user) {
-          if (user.isReady && user.socketID == _this2.data.socketID) {
-            console.log("im ready");
-            (0, _jquery.default)(".btn-ready").attr("disabled", true).css({
-              opacity: 0.3,
-              cursor: "not-allowed"
+        socket.on("first connect", function (data) {
+          console.log(data);
+
+          _this2.setData({
+            socketID: data.socketID
+          }, function () {
+            console.log("set data", _this2.data);
+            socket.emit("reply connect", {
+              username: _this2.data.username,
+              socketID: _this2.data.socketID
             });
+            console.log(_this2.data);
+          });
+        });
+        socket.on("room found", function (_ref) {
+          var roomID = _ref.roomID;
+          console.log("room found", roomID);
+
+          _this2.setData({
+            roomFound: true,
+            roomID: roomID
+          }, function () {
+            (0, _jquery.default)(".speedup-popup").fadeIn();
+            (0, _jquery.default)(".room-code").text(_this2.data.roomID);
+          });
+        });
+        socket.on("reply creator leave room", function () {
+          console.log("socket leave room");
+
+          _this2.setData({
+            roomID: null
+          }, function () {
+            (0, _jquery.default)(".speedup-popup").fadeOut();
+          });
+        });
+        socket.on("creator disconnect", function () {
+          console.log("creator disconnect");
+
+          _this2.setData({
+            roomID: null
+          }, function () {
+            (0, _jquery.default)(".speedup-popup").fadeOut();
+          });
+        });
+        socket.on("game is ready", function () {
+          console.log("game ready");
+          _this2.data.isGameReady = true;
+          (0, _jquery.default)(".btn-start").attr("disabled", false).css({
+            opacity: 1,
+            cursor: "pointer"
+          });
+        });
+        socket.on("game not ready", function () {
+          console.log("game is not ready");
+          _this2.data.isGameReady = false;
+          (0, _jquery.default)(".btn-start").attr("disabled", true).css({
+            opacity: 0.3,
+            cursor: "not-allowed"
+          });
+        });
+        socket.on("start game", function () {
+          console.log("game started");
+
+          _this2.startGame();
+        });
+        socket.on("update users in room", function (_ref2) {
+          var users = _ref2.users;
+          console.log("user in room", users);
+          _this2.data.usersInRoom = _toConsumableArray(users).concat(_toConsumableArray(Array(_this2.data.usersInRoom.length - users.length).fill("waiting...")));
+          (0, _jquery.default)(".user-list-container").html("\n          ".concat(_this2.data.usersInRoom.map(function (user) {
+            return "\n              <div class=\"user-list\">".concat(user.username || "waiting", " ").concat(user.isReady ? "ready" : "", "</div>\n              ");
+          }).join(""), " \n            <button class=\"btn-start bg-teal text-white py-2 px-4\">\n              start game\n            </button>\n            <button class=\"btn-ready bg-red text-white py-2 px-4\">\n              ready\n            </button>\n        "));
+          (0, _jquery.default)(".inner-speedup-game").html("\n          ".concat(_this2.data.usersInRoom.map(function (user) {
+            return "\n            <div>".concat(user.username || "", "</div>\n          ");
+          }).join(""), " \n        "));
+
+          if (!_this2.data.isCreatorRoom) {
+            (0, _jquery.default)(".btn-start").remove();
+            (0, _jquery.default)(".btn-ready").show();
+          } else {
+            (0, _jquery.default)(".btn-start").show();
+            (0, _jquery.default)(".btn-ready").remove();
           }
-        });
 
-        (0, _jquery.default)(".btn-start").on("click", function () {
-          return console.log("start game");
-        });
-        (0, _jquery.default)(".btn-ready").on("click", function () {
-          socket.emit("user ready", {
-            roomID: _this2.data.roomID,
-            socketID: _this2.data.socketID
+          _this2.data.usersInRoom.map(function (user) {
+            if (user.isReady && user.socketID == _this2.data.socketID) {
+              console.log("im ready");
+              (0, _jquery.default)(".btn-ready").attr("disabled", true).css({
+                opacity: 0.3,
+                cursor: "not-allowed"
+              });
+            }
           });
-        });
-      });
-    }
-  }, {
-    key: "createRoom",
-    value: function createRoom() {
-      var _this3 = this;
 
-      console.log("create room");
-      this.setData({
-        roomID: _faker.default.random.number(),
-        isCreatorRoom: true
-      }, function () {
-        console.log(_this3.data);
-        (0, _jquery.default)(".room-code").text(_this3.data.roomID);
-        socket.emit("create room", {
-          roomID: _this3.data.roomID,
-          socketID: _this3.data.socketID,
-          creatorRoom: _this3.data.username
-        });
-      });
-    }
-  }, {
-    key: "closePopupRoom",
-    value: function closePopupRoom() {
-      var _this4 = this;
-
-      console.log("close popup room");
-      var isCreatorRoom = this.data.isCreatorRoom;
-
-      if (isCreatorRoom) {
-        console.log("creator leave room");
-        this.setData({
-          isCreatorRoom: false
-        }, function () {
-          socket.emit("creator leave room", {
-            roomID: _this4.data.roomID
+          (0, _jquery.default)(".btn-start").on("click", function () {
+            if (!_this2.data.isGameReady) {
+              return;
+            } else {
+              console.log("lets to game");
+              socket.emit("creator start to game", {
+                roomID: _this2.data.roomID
+              });
+            }
           });
-        });
-      } else {
-        console.log("user leave room", this.data.roomID);
-        this.setData({
-          roomFound: false
-        });
-        socket.emit("user leave room", {
-          roomID: this.data.roomID,
-          socketID: this.data.socketID
+          (0, _jquery.default)(".btn-ready").on("click", function () {
+            socket.emit("user ready", {
+              roomID: _this2.data.roomID,
+              socketID: _this2.data.socketID
+            });
+          });
         });
       }
+    }, {
+      key: "createRoom",
+      value: function createRoom() {
+        var _this3 = this;
+
+        console.log("create room");
+        this.setData({
+          roomID: _faker.default.random.number(),
+          isCreatorRoom: true
+        }, function () {
+          console.log(_this3.data);
+          (0, _jquery.default)(".room-code").text(_this3.data.roomID);
+          socket.emit("create room", {
+            roomID: _this3.data.roomID,
+            socketID: _this3.data.socketID,
+            creatorRoom: _this3.data.username
+          });
+        });
+      }
+    }, {
+      key: "closePopupRoom",
+      value: function closePopupRoom() {
+        var _this4 = this;
+
+        console.log("close popup room");
+        var isCreatorRoom = this.data.isCreatorRoom;
+
+        if (isCreatorRoom) {
+          console.log("creator leave room");
+          this.setData({
+            isCreatorRoom: false
+          }, function () {
+            socket.emit("creator leave room", {
+              roomID: _this4.data.roomID
+            });
+          });
+        } else {
+          console.log("user leave room", this.data.roomID);
+          this.setData({
+            roomFound: false
+          });
+          socket.emit("user leave room", {
+            roomID: this.data.roomID,
+            socketID: this.data.socketID
+          });
+        }
+      }
+    }, {
+      key: "submitRoomCode",
+      value: function submitRoomCode(value) {
+        console.log("submit", value);
+        socket.emit("find room", {
+          socketID: this.data.socketID,
+          roomValue: value
+        });
+      }
+    }, {
+      key: "startGame",
+      value: function startGame() {
+        (0, _jquery.default)(".speedup-popup").fadeToggle();
+        (0, _jquery.default)(".speedup-room-container").fadeToggle();
+        (0, _jquery.default)(".speedup-game-container").fadeIn();
+        socket.emit("in game", {
+          socketID: this.data.socketID,
+          roomID: this.data.roomID
+        });
+      }
+    }]);
+
+    return Room;
+  }();
+
+  var Game =
+  /*#__PURE__*/
+  function (_Room) {
+    _inherits(Game, _Room);
+
+    function Game() {
+      var _this5;
+
+      _classCallCheck(this, Game);
+
+      _this5 = _possibleConstructorReturn(this, _getPrototypeOf(Game).call(this));
+      console.log(_assertThisInitialized(_assertThisInitialized(_this5)));
+      return _this5;
     }
-  }, {
-    key: "submitRoomCode",
-    value: function submitRoomCode(value) {
-      console.log("submit", value);
-      socket.emit("find room", {
-        socketID: this.data.socketID,
-        roomValue: value
-      });
-    }
-  }]);
 
-  return Room;
-}();
+    _createClass(Game, [{
+      key: "handleGameSocket",
+      value: function handleGameSocket() {
+        console.log("game socket");
+      }
+    }, {
+      key: "init",
+      value: function init() {
+        _get(_getPrototypeOf(Game.prototype), "init", this).call(this);
 
-var Game =
-/*#__PURE__*/
-function (_Room) {
-  _inherits(Game, _Room);
+        this.handleGameSocket();
+      }
+    }]);
 
-  function Game() {
-    var _this5;
-
-    _classCallCheck(this, Game);
-
-    _this5 = _possibleConstructorReturn(this, _getPrototypeOf(Game).call(this));
-    console.log(_assertThisInitialized(_assertThisInitialized(_this5)));
-    return _this5;
-  }
-
-  _createClass(Game, [{
-    key: "handleGameSocket",
-    value: function handleGameSocket() {
-      console.log("game socket");
-    }
-  }, {
-    key: "init",
-    value: function init() {
-      _get(_getPrototypeOf(Game.prototype), "init", this).call(this);
-
-      this.handleGameSocket();
-    }
-  }]);
-
-  return Game;
-}(Room); // let speedup = new Speedup();
+    return Game;
+  }(Room); // let speedup = new Speedup();
 
 
-var game = new Game();
-game.init(); // speedup.init();
+  var game = new Game();
+  game.init(); // speedup.init();
+});
 },{"jquery":"../node_modules/jquery/dist/jquery.js","socket.io-client":"../node_modules/socket.io-client/lib/index.js","faker":"../node_modules/faker/index.js"}]},{},["jquerySpeedup/speedup.js"], null)
 //# sourceMappingURL=/speedup.e58f3b81.map
