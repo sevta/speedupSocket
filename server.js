@@ -19,75 +19,151 @@ function getAllRooms() {
   return io.sockets.adapter.rooms;
 }
 
-function leaveAllUserInRoom(users, roomID) {
-  let room = getRoom(roomID);
+class User {
+  constructor(props) {
+    this.username = props.username;
+    this.socketID = props.socketID;
+    this.isCreator = false;
+    this.isCreator = false;
+    this.roomID = null;
+    this.isReady = false;
+    this.inRoom = false;
+    this.inGame = false;
+  }
 
-  console.log("disconnect on room", room);
+  setState(newState) {
+    console.log("im currently set new state", newState, this);
+  }
 
-  // leave all user in room
-  if (room) {
-    room.users.forEach(user => {
-      console.log("and user is", user);
-      let socketId = user.socketID;
-      io.sockets.sockets[socketId].leave(roomID);
+  resetValue() {
+    this.inRoom = false;
+    this.roomID = null;
+    this.isReady = false;
+    this.inGame = false;
+    this.isCreator = false;
+  }
+}
+
+class Room {
+  constructor(props) {
+    this.roomID = props.roomID;
+    this.users = [];
+    this.roomInGame = false;
+    this.interValRoomTimer = null;
+    this.interValGameTiemr = null;
+    this.roomTimer = 15;
+    this.gameTimer = 30;
+  }
+
+  updateStatusUserInRoom(users, socketID) {
+    let userUpdate = users[socketID];
+    let findIndexUser = this.users.map(user => user.socketID).indexOf(socketID);
+    console.log("update status user to room", userUpdate, findIndexUser);
+    this.users[findIndexUser] = { ...userUpdate };
+    console.log("updated user in class", this.users);
+  }
+
+  pushUserToRoom(user) {
+    this.users.push(user);
+    // console.log("user in room class", this.users);
+    this.users.map(user => console.log("user in room", user));
+  }
+
+  checkCanStartGame() {
+    // find all user status ready in room
+    let filterUserReady = this.users.filter(val => val.isReady);
+    console.log("how many user ready in room", filterUserReady.length);
+    // find creator room in all user status ready
+    let creatorRoom = filterUserReady.filter(val => val.isCreator);
+    // if user ready has 4 people tell to creator game is ready to play
+    if (filterUserReady.length >= 2 && filterUserReady.length >= 3) {
+      console.log("send to creator game is ready", creatorRoom);
+      // emit to creator game is ready to play
+      io.to(creatorRoom[0].socketID).emit("game is ready");
+    } else {
+      // emit to creator game game not ready
+      console.log("game not ready , waiting for other player...", creatorRoom);
+      io.to(creatorRoom[0].socketID).emit("game not ready");
+    }
+  }
+
+  removeUserInRoom(socketID) {
+    let findIndesUserLeave = this.users
+      .map(user => user.socketID)
+      .indexOf(socketID);
+    this.users.splice(findIndesUserLeave, 1);
+  }
+
+  leaveAllUserInRoom(users) {
+    // console.log("disconnect on room", room);
+    this.users.map(({ socketID }) => {
+      // leave all user in socket room
+      io.sockets.sockets[socketID].leave(this.roomID);
       // reset status user in room
-      users[user.socketID].isReady = false;
-      users[user.socketID].isCreator = false;
-      users[user.socketID].inRoom = false;
-      users[user.socketID].inGame = false;
-      users[user.socketID].roomID = null;
-      console.log("user leave", user);
+      users[socketID].isReady = false;
+      users[socketID].isCreator = false;
+      users[socketID].inRoom = false;
+      users[socketID].inGame = false;
+      users[socketID].roomID = null;
+    });
+
+    let filterUserLeave = this.users.map(({ socketID }) => users[socketID]);
+    console.log("check user leave", filterUserLeave);
+  }
+
+  emitUpdatedUserInRoom() {
+    io.to(this.roomID).emit("update users in room", {
+      users: this.users
     });
   }
-}
 
-function updateUsersInRoom(roomID) {
-  let allUserInRoom = getRoom(roomID).users;
-
-  io.to(roomID).emit("update users in room", {
-    users: allUserInRoom
-  });
-
-  // find all user status ready in room
-  let filterUserReady = allUserInRoom.filter(val => val.isReady);
-  console.log("check user in room is ready or not", filterUserReady);
-  // find creator room in all user status ready
-  let creatorRoom = filterUserReady.filter(val => val.isCreator);
-  // if user ready has 4 people tell to creator game is ready to play
-  if (filterUserReady.length == 2) {
-    console.log("send to creator game is ready", creatorRoom);
-    // emit to creator game is ready to play
-    io.to(creatorRoom[0].socketID).emit("game is ready");
-  } else {
-    // emit to creator game game not ready
-    console.log("game not ready , waiting for other player...", creatorRoom);
-    io.to(creatorRoom[0].socketID).emit("game not ready");
+  startTimerRoom() {
+    this.interValRoomTimer = setInterval(() => {
+      this.roomTimer--;
+      if (this.roomTimer <= 0) {
+        this.roomTimer = 0;
+        this.stopTimerRoom();
+      }
+      io.to(this.roomID).emit("start room timer", {
+        roomTimer: this.roomTimer
+      });
+      // console.log("room timer in", this.roomID, this.roomTimer);
+    }, 1000);
   }
-}
 
-// replace current status user to user array in socket room
-function updateStatusUserToRoom(users, socketID, roomID) {
-  let room = getRoom(roomID);
-  let userUpdate = users[socketID];
-  let findIndexUser = room.users.map(user => user.socketID).indexOf(socketID);
-  console.log("update status user to room", userUpdate, findIndexUser);
-  room.users[findIndexUser] = { ...userUpdate };
+  stopTimerRoom() {
+    console.log("stop timer");
+    clearInterval(this.interValRoomTimer);
+    io.to(this.roomID).emit("room timer done", {
+      roomTimer: this.roomTimer
+    });
+    // send to creator room timer is done
+    // let creator = this.users.filter(val => val.isCreator);
+    // console.log("room timer done", this.users, creator[0]);
+    // io.to(creator[0].socketID).emit("creator stop timer room");
+  }
+
+  startTimerGame() {
+    console.log("game timer start");
+  }
 }
 
 let users = {};
+let rooms = {};
 
 io.on("connection", socket => {
-  console.log("connected");
-
   // initial user state
-  users[socket.id] = {
-    username: null,
-    roomID: null,
-    socketID: socket.id,
-    isCreator: false,
-    isReady: false,
-    inRoom: false,
-    inGame: false
+  users[socket.id] = new User({
+    socketID: socket.id
+  });
+
+  const find = {
+    user(socketID) {
+      return users[socketID];
+    },
+    room(roomID) {
+      return rooms[roomID];
+    }
   };
 
   // first connect send to client his socket id
@@ -96,68 +172,73 @@ io.on("connection", socket => {
   });
 
   // reply in first connect from client and keep important data from client to users state
-  socket.on("reply connect", data => {
-    users[data.socketID].username = data.username;
-    console.log(users);
+  socket.on("reply connect", ({ socketID, username }) => {
+    let user = find.user(socketID);
+    user.username = username;
+    console.log("reply first connect", username, socketID);
   });
 
   // on create room
   socket.on("create room", ({ socketID, roomID }) => {
-    console.log(socketID, "create room ", roomID);
-    if (users[socketID]) {
+    let user = find.user(socketID);
+    if (user) {
       // update user status
-      users[socketID].isCreator = true;
-      users[socketID].roomID = roomID;
-      users[socketID].inRoom = true;
-      users[socketID].isReady = true;
+      user.isCreator = true;
+      user.roomID = roomID;
+      user.inRoom = true;
+      user.isReady = true;
       socket.join(roomID);
-
-      console.log("users on create room", users);
-
-      let room = getRoom(roomID);
-
-      // give room id to socket room
-      room.roomID = roomID;
-
-      // initalize user in room
-      room.users = [];
-      room.users.push(users[socket.id]);
-
-      // then update user and emit to client
-      updateUsersInRoom(roomID);
-      console.log("room is", room);
+      // create new room
+      rooms[roomID] = new Room({
+        roomID
+      });
+      // find room and update
+      let room = find.room(roomID);
+      room.pushUserToRoom(users[socketID]);
+      room.emitUpdatedUserInRoom();
+      room.checkCanStartGame();
+      room.startTimerRoom();
     }
   });
 
   // on creator leave room
   socket.on("creator leave room", ({ roomID }) => {
-    console.log("creator leave room");
     io.to(roomID).emit("reply creator leave room");
-
+    let room = find.room(roomID);
     // leave all user in room && reset user to default value
-    leaveAllUserInRoom(users, roomID);
+    if (room) {
+      room.leaveAllUserInRoom(users);
+      room.stopTimerRoom();
+      delete rooms[roomID];
+    }
   });
 
   socket.on("find room", ({ roomValue, socketID }) => {
     console.log("searching room", roomValue);
-
+    let room = find.room(roomValue);
+    let user = find.user(socketID);
     // if room found
-    if (getRoom(roomValue)) {
-      console.log("room found");
-      let room = getRoom(roomValue);
-      // send to client room is found
-      socket.emit("room found", {
-        roomID: roomValue
-      });
-      socket.join(roomValue);
-
-      // update user status && update the room
-      users[socketID].inRoom = true;
-      users[socketID].roomID = roomValue;
-      room.users.push(users[socketID]);
-      updateUsersInRoom(roomValue);
-
-      console.log("room after find room", room);
+    if (room) {
+      if (room.users.length == 3) {
+        // send to client room fulll
+        socket.emit("room full");
+        console.log("room full");
+      } else {
+        // send to client room is found
+        console.log("room found");
+        socket.emit("room found", {
+          roomID: roomValue
+        });
+        socket.join(roomValue);
+        // update user status && update the room
+        user.inRoom = true;
+        user.roomID = roomValue;
+        room.pushUserToRoom(user);
+        room.checkCanStartGame();
+        room.emitUpdatedUserInRoom();
+        console.log("room after find room", room);
+        // console.log("room socket after find room", getRoom(user.roomID));
+      }
     } else {
       console.log("room not found");
       socket.emit("room not found");
@@ -166,61 +247,102 @@ io.on("connection", socket => {
 
   // on user leave room
   socket.on("user leave room", ({ roomID, socketID }) => {
-    let userLeave = users[socketID];
-    let room = getRoom(roomID);
-
+    let user = find.user(socketID);
+    let room = find.room(roomID);
+    // if room found
     if (room) {
       // find index user in room && remove user in room
-      let findIndesUserLeave = room.users
-        .map(user => user.socketID)
-        .indexOf(socketID);
-      room.users.splice(findIndesUserLeave, 1);
-      // reset user leave to default value
-      userLeave.inRoom = false;
-      userLeave.roomID = null;
-      userLeave.isReady = false;
-      socket.leave(roomID);
-
       // update user and emit to client
-      updateUsersInRoom(roomID);
-
-      console.log("user leave", userLeave.username);
-      console.log("user leave index", findIndesUserLeave);
-      console.log("room after user leave", room);
+      room.removeUserInRoom(socketID);
+      user.resetValue();
+      room.emitUpdatedUserInRoom();
+      socket.leave(roomID);
     }
   });
 
   // on user is ready to play
   socket.on("user ready", ({ roomID, socketID }) => {
-    let userReady = users[socketID];
-    console.log(userReady.username, "is ready in room", userReady.roomID);
-    userReady.isReady = true;
-    updateStatusUserToRoom(users, socketID, roomID);
-    updateUsersInRoom(roomID);
+    let user = find.user(socketID);
+    let room = find.room(roomID);
+    console.log(user.username, "is ready in room", user.roomID);
+    user.isReady = true;
+    room.updateStatusUserInRoom(users, socketID);
+    room.checkCanStartGame();
+    room.emitUpdatedUserInRoom();
   });
 
   socket.on("creator start to game", ({ roomID }) => {
     io.to(roomID).emit("start game");
   });
 
+  // socket.on("reply creator stop timer room", ({ roomID }) => {
+  //   console.log("stop timer room in", roomID);
+  //   console.log("room before room timer done");
+  //   // if room timer done , delete room from creator room
+  //   let room = find.room(roomID);
+  //   console.log("reply creator stop timer room");
+  //   // room.leaveAllUserInRoom(users);
+  //   // room.updateStatusUserInRoom(users, roomID);
+  //   // room.emitUpdatedUserInRoom();
+  //   delete rooms[roomID];
+  //   // console.log("room after room timer done", room, getRoom(roomID));
+  //   // console.log("users after room done", users);
+  // });
+
+  socket.on("reset user in timer done", ({ socketID }) => {
+    let user = find.user(socketID);
+    if (!user.inGame) {
+      if (user.isCreator) {
+        console.log("saya creator dan mau hapus room", user);
+        // todo
+        // send to creator room is done
+        // stop timer
+        io.to(user.socketID).emit("creator stop timer room");
+        // let room = find.room(user.roomID)
+        delete rooms[user.roomID];
+
+        user.resetValue();
+      } else {
+        user.resetValue();
+      }
+      console.log("room after reset user timer done creator", rooms);
+      console.log("users after reset user timer in room", users);
+    }
+  });
+
   // in first game loaded update current status user his in game & send to room
   socket.on("in game", ({ socketID, roomID }) => {
-    let user = users[socketID];
+    let user = find.user(socketID);
+    let room = find.room(roomID);
     user.inGame = true;
-    updateStatusUserToRoom(users, socketID, roomID);
-    updateUsersInRoom(roomID);
+    room.updateStatusUserInRoom(users, socketID);
+    room.stopTimerRoom();
+    room.startTimerGame();
+    room.emitUpdatedUserInRoom();
   });
 
   socket.on("disconnect", async () => {
     console.log("disconnect", users[socket.id]);
-    let user = users[socket.id];
+    let user = find.user(socket.id);
+
+    // if user disconnect in lobby and not the creator
+    if (user.inRoom && !user.isCreator && !user.inGame) {
+      let room = find.room(user.roomID);
+      console.log("im in room but disconnect", user.username, "in room", room);
+      room.removeUserInRoom(user.socketID);
+      socket.leave(user.roomID);
+      room.emitUpdatedUserInRoom();
+      console.log("room now is", room);
+      console.log("socket room now", getRoom(user.roomID));
+    }
+
     // if creator in room but disconnect leave all user in room &&
     // reset all user in room to default value
-    if (users[socket.id].isCreator && users[socket.id].inRoom) {
+    if (user.isCreator && user.inRoom && !user.inGame) {
       let roomID = users[socket.id].roomID;
+      console.log("creator disconnect", user.username);
       io.to(roomID).emit("creator disconnect", user.username);
-      let room = getRoom(roomID);
-
+      let room = find.room(roomID);
       // find all user in room &&
       // reset defeault value except creator room because his disconnect and
       // his user object has deleted :(
@@ -235,32 +357,36 @@ io.on("connection", socket => {
           io.sockets.sockets[socketId].leave(roomID);
         }
       });
+      room.stopTimerRoom();
+      delete rooms[roomID];
     }
 
     // if user in game but disconnect or left
-    if (users[socket.id].inGame) {
+    if (user.inGame) {
       console.log("in game but im disconnect", user.username);
       let roomID = user.roomID;
-      let room = getRoom(roomID);
-      let allUserInRoom = room.users;
-
-      // tell to room his leave us  :(
-      io.to(roomID).emit("user left game", {
-        user: user.username
-      });
-
-      // get index user left & remove from room
-      let findIndexUserLeftGame = room.users
-        .map(userInRoom => userInRoom.socketID)
-        .indexOf(socket.id);
-      allUserInRoom.splice(findIndexUserLeftGame, 1);
-      console.log("he is left game", findIndexUserLeftGame, user.username);
-
-      io.to(roomID).emit("update users in room", {
-        users: allUserInRoom
-      });
+      let socketID = user.socketID;
+      let room = find.room(roomID);
+      // if she alone in game but disconnect
+      // delete room object
+      console.log("room now", getRoom(roomID), room);
+      if (room.users.length == 1) {
+        console.log("im alone but disconnect please delete room");
+        console.log("room now", getRoom(roomID));
+        delete rooms[roomID];
+        socket.leave(roomID);
+        console.log("room now", getRoom(roomID));
+      } else {
+        // tell to room his leave us  :(
+        io.to(roomID).emit("user left game", {
+          user: user.username
+        });
+        // get index user left & remove from room
+        room.removeUserInRoom(socketID);
+        room.emitUpdatedUserInRoom();
+        console.log("room now", room, getRoom(roomID));
+      }
     }
-
     // delete disconnected users
     delete users[socket.id];
   });

@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import Avatar from "./Avatar";
+import { async } from "q";
 
 function selector(el) {
   return document.querySelectorAll(el);
@@ -17,17 +18,14 @@ export default class Game extends Component {
     value: "",
     position: 0,
     step: 0,
-    moveState: null,
-    isBackSpace: false,
-    isFalse: false
+    moveState: null
   };
 
   componentDidMount = () => {
-    this.extractWords().then(() => {
-      console.log("ref", this.wordRef);
-      let el = selector(".s-word");
-      console.log("el", el);
-    });
+    await this.extractWords();
+    console.log("ref", this.wordRef);
+    let el = selector(".s-word");
+    console.log("el", el);
   };
 
   extractWords = () => {
@@ -40,39 +38,16 @@ export default class Game extends Component {
     });
   };
 
-  onKeyDown = e => {
-    const { extractWords, position, isBackSpace, isFalse } = this.state;
+  onChange = e => {
+    const { extractWords, position } = this.state;
     let value = e.target.value;
-    // console.log(e);
     this.setState({ value });
-    let el = selector(".s-word");
-    let inputBox = selector(".speedup-input");
-    let cursorPosition = inputBox[0].selectionStart;
-    // console.log(inputBox, cursorPosition);
-
-    console.log(extractWords[cursorPosition], e.key);
-    if (e.key == "Backspace") {
-      console.log("backspace");
-      this.setState({ isBackSpace: true });
+    if (value == extractWords[position]) {
+      console.log("next");
+      this.setState({ moveState: "forward" });
     } else {
-      this.setState({ isBackSpace: false });
-    }
-    if (!isFalse) {
-      if (e.key === extractWords[cursorPosition]) {
-        console.log("next", el[cursorPosition]);
-        this.setState({ isFalse: false });
-        el[cursorPosition].style.background = "tomato";
-      } else {
-        console.log("back");
-        this.setState({ isFalse: true });
-        if (!isBackSpace) {
-          el[cursorPosition].style.background = "transparent";
-        } else {
-          el[cursorPosition - 1].style.background = "transparent";
-        }
-      }
-    } else {
-      el[cursorPosition].style.background = "red";
+      console.log("false");
+      this.setState({ moveState: "back" });
     }
   };
 
@@ -83,7 +58,7 @@ export default class Game extends Component {
       <div>
         <h1>Game</h1>
         <Word extractWords={extractWords} refs={this.wordRef} />
-        <Input onKeyDown={this.onKeyDown} />
+        <Input onChange={this.onChange} />
         <Avatar />
       </div>
     );

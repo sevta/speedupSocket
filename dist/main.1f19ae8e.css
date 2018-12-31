@@ -1,0 +1,14 @@
+.btn-start[data-v-31053f]:disabled {
+  filter: grayscale(0.5);
+  cursor: not-allowed;
+}
+.btn-ready[data-v-31053f] {
+  background: tomato;
+}
+.btn-ready[data-v-31053f]:disabled {
+    filter: grayscale(0.5);
+    cursor: not-allowed;
+}
+.correct[data-v-0c02b8] {
+  transition: all 0.2s ease;
+}

@@ -25,6 +25,7 @@
         class="inner-speedup-popup w-auto bg-white p-4 flex items-center justify-center flex-col"
       >
         <h1>speedup</h1>
+        <div class="timer-room">-</div>
         <p class="room-code"></p>
         <div class="user-list-container flex flex-col"></div>
       </div>
@@ -44,11 +45,19 @@
       </div>
     </div>
     <!-- end -->
+
+    <div id="vue-app"></div>
+
+    <!-- vue -->
+    <div id="game"></div>
     <script>
       __REACT_DEVTOOLS_GLOBAL_HOOK__.inject = function() {};
     </script>
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.slim.js"></script> -->
     <!-- <script src="./app.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.21/dist/vue.js"></script>
+    <!-- <script src="./vue/main.js"></script> -->
+
     <script src="./jquerySpeedup/speedup.js"></script>
   </body>
 </html>

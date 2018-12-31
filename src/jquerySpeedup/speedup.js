@@ -11,7 +11,6 @@ $(document).ready(function() {
         username: faker.name.findName(),
         socketID: null,
         roomID: null,
-        isCreator: false,
         isCreatorRoom: false,
         inRoom: false,
         inGame: false,
@@ -87,6 +86,10 @@ $(document).ready(function() {
         });
       });
 
+      socket.on("room full", () => {
+        console.log("room full");
+      });
+
       socket.on("room found", ({ roomID }) => {
         console.log("room found", roomID);
         this.setData({ roomFound: true, roomID: roomID }, () => {
@@ -121,7 +124,7 @@ $(document).ready(function() {
       });
 
       socket.on("game not ready", () => {
-        console.log("game is not ready");
+        console.log("game is not ready ....");
         this.data.isGameReady = false;
         $(".btn-start")
           .attr("disabled", true)
@@ -134,6 +137,35 @@ $(document).ready(function() {
       socket.on("start game", () => {
         console.log("game started");
         this.startGame();
+      });
+
+      socket.on("start room timer", ({ roomTimer }) => {
+        console.log("room timer", roomTimer);
+        $(".timer-room").text(roomTimer);
+      });
+
+      socket.on("creator stop timer room", () => {
+        console.log("im creator and room is done");
+        this.data.isCreatorRoom = false;
+        socket.emit("reply creator stop timer room", {
+          socketID: this.data.socketID,
+          roomID: this.data.roomID
+        });
+        $(".speedup-popup").fadeOut();
+      });
+
+      socket.on("room timer done", () => {
+        $(".speedup-popup").fadeOut();
+        socket.emit("reset user in timer done", {
+          socketID: this.data.socketID
+        });
+        // this.setData({
+        //   roomID: null,
+        //   isCreator: false,
+        //   inRoom: false,
+        //   inGame: false
+        // });
+        // console.log("room timer done");
       });
 
       socket.on("update users in room", ({ users }) => {
@@ -288,4 +320,78 @@ $(document).ready(function() {
   let game = new Game();
   game.init();
   // speedup.init();
+
+  //   new Vue({
+  //     el: "#game",
+  //     data() {
+  //       return {
+  //         count: 0,
+  //         inGame: false,
+  //         popup: false,
+  //         popupRoom: false,
+  //         toggleJoin: false,
+  //         username: faker.name.findName(),
+  //         socketID: null,
+  //         roomID: null,
+  //         isCreatorRoom: false,
+  //         inRoom: false,
+  //         inGame: false,
+  //         roomFound: false,
+  //         isUserReady: false,
+  //         isGameReady: false,
+  //         usersInRoom: [...Array(4).fill("waiting")]
+  //       };
+  //     },
+  //     template: `
+  //       <div>
+  //         <popup-room
+  //           v-if="popupRoom"
+  //           :onClick="hidePopupRoom"
+  //           timer="30"
+  //           :users="usersInRoom"
+  //           roomCode="1234">
+  //         </popup-room>
+  //         <h1>hello {{ username }}</h1>
+  //         <input v-if="toggleJoin" type="text" placeholder="input room code" />
+  //         <div class="button-container">
+  //           <button class="bg-teal text-white p-2 btn-create" @click="createRoom">create</button>
+  //           <button class="bg-teal text-white p-2 btn-join" @click="joinRoom">join</button>
+  //         </div>
+  //       </div>
+  //     `,
+  //     mounted() {
+  //       this.handleSocket();
+  //     },
+  //     methods: {
+  //       handleSocket() {},
+  //       createRoom() {
+  //         this.popupRoom = true;
+  //       },
+  //       joinRoom() {
+  //         this.toggleJoin = !this.toggleJoin;
+  //       },
+  //       hidePopupRoom() {
+  //         this.popupRoom = false;
+  //       }
+  //     }
+  //   });
+  // });
+
+  // Vue.component("popup-room", {
+  //   props: ["onClick", "timer", "roomCode", "users"],
+  //   template: `
+  //     <div
+  //       class="speedup-popup bg-black fixed pin-y pin-x flex items-center justify-center"
+  //       @click="onClick"
+  //     >
+  //       <div
+  //         class="inner-speedup-popup w-auto bg-white p-4 flex items-center justify-center flex-col"
+  //       >
+  //         <h1>speedup</h1>
+  //         <div class="timer-room">{{timer}}</div>
+  //         <p class="room-code">roomcode is{{ roomCode }}</p>
+  //         <div class="user-list-container flex flex-col" v-for="user in users">{{user}}</div>
+  //       </div>
+  //     </div>
+  //   `
 });
