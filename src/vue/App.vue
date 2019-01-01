@@ -35,10 +35,7 @@
 <script>
 import popupRoom from "./Room";
 import game from "./Game";
-import faker from "faker";
 import io from "socket.io-client";
-const socket = io.connect("http://localhost:4200");
-
 export default {
   name: "App",
   components: {
@@ -53,7 +50,7 @@ export default {
       timerRoom: 0,
       searchRoomCode: null,
       toggleJoin: false,
-      username: faker.name.findName(),
+      username: null,
       socketID: null,
       roomID: null,
       isCreatorRoom: false,
@@ -63,89 +60,101 @@ export default {
       isUserReady: false,
       isGameReady: false,
       debug: false,
-      socket: socket,
+      socket: null,
       usersInRoom: [...Array(4).fill("waiting")]
     };
   },
   mounted() {
-    if (this.debug) {
-      this.inGame = true;
-    } else {
-      this.handleSocket();
-      console.log(socket);
-    }
+    console.log("mounted");
+    fetch("https://uinames.com/api/?amount=25")
+      .then(res => res.json())
+      .then(data => {
+        let random = val => Math.floor(Math.random() * data.length);
+        this.username = data[random(data)].name;
+        console.log("username", this.username);
+        this.socket = io.connect("http://localhost:4200");
+        if (this.debug) {
+          this.inGame = true;
+        } else {
+          this.handleSocket();
+          console.log("handle socket");
+          console.log(socket);
+        }
+      })
+      .catch(err => console.log(err));
   },
   methods: {
     handleSocket() {
       // first connect
-      socket.on("first connect", ({ socketID }) => {
+      console.log("first connect");
+      this.socket.on("first connect", ({ socketID }) => {
         console.log(socketID);
         this.socketID = socketID;
         console.log("first connect", this.socketID);
-        socket.emit("reply connect", {
+        this.socket.emit("reply connect", {
           username: this.username,
           socketID: this.socketID
         });
       });
 
       // start timer room
-      socket.on("start room timer", ({ roomTimer }) => {
+      this.socket.on("start room timer", ({ roomTimer }) => {
         console.log("room timer", roomTimer);
         this.timerRoom = roomTimer;
       });
 
       // timer done
-      socket.on("room timer done", () => {
+      this.socket.on("room timer done", () => {
         this.popupRoom = false;
-        socket.emit("reset user in timer done", {
+        this.socket.emit("reset user in timer done", {
           socketID: this.socketID
         });
       });
-      socket.on("creator stop timer room", () => {
+      this.socket.on("creator stop timer room", () => {
         console.log("im creator and room is done");
         this.isCreatorRoom = false;
-        socket.emit("reply creator stop timer room", {
+        this.socket.emit("reply creator stop timer room", {
           socketID: this.socketID,
           roomID: this.roomID
         });
       });
-      socket.on("room found", ({ roomID }) => {
+      this.socket.on("room found", ({ roomID }) => {
         console.log("room found", roomID);
         this.roomFound = true;
         this.roomID = roomID;
         this.popupRoom = true;
       });
-      socket.on("reply creator leave room", () => {
+      this.socket.on("reply creator leave room", () => {
         console.log("socket leave room");
         this.roomID = null;
         this.popupRoom = false;
       });
-      socket.on("update users in room", ({ users }) => {
+      this.socket.on("update users in room", ({ users }) => {
         console.log("users", users);
         this.usersInRoom = [
           ...users,
           ...Array(this.usersInRoom.length - users.length).fill("waiting...")
         ];
       });
-      socket.on("creator disconnect", () => {
+      this.socket.on("creator disconnect", () => {
         console.log("creator disconnect");
         this.roomID = null;
         this.popupRoom = false;
       });
-      socket.on("game is ready", () => {
+      this.socket.on("game is ready", () => {
         console.log("game ready");
         this.isGameReady = true;
       });
-      socket.on("start game", () => {
+      this.socket.on("start game", () => {
         this.startGame();
       });
     },
     createRoom() {
       this.popupRoom = true;
       console.log("create room");
-      this.roomID = faker.random.number();
+      this.roomID = Date.now().toString();
       this.isCreatorRoom = true;
-      socket.emit("create room", {
+      this.socket.emit("create room", {
         roomID: this.roomID,
         socketID: this.socketID,
         creatorRoom: this.username
@@ -158,13 +167,13 @@ export default {
       if (this.isCreatorRoom) {
         console.log("creator leave room");
         this.isCreatorRoom = false;
-        socket.emit("creator leave room", {
+        this.socket.emit("creator leave room", {
           roomID: this.roomID
         });
       } else {
         console.log("user leave room");
         this.roomFound = false;
-        socket.emit("user leave room", {
+        this.socket.emit("user leave room", {
           roomID: this.roomID,
           socketID: this.socketID
         });
@@ -180,21 +189,21 @@ export default {
     onSubmit(e) {
       e.preventDefault();
       console.log("submit", this.searchRoomCode);
-      socket.emit("find room", {
+      this.socket.emit("find room", {
         socketID: this.socketID,
         roomValue: this.searchRoomCode
       });
     },
     onUserReady() {
       console.log("im ready");
-      socket.emit("user ready", {
+      this.socket.emit("user ready", {
         roomID: this.roomID,
         socketID: this.socketID
       });
     },
     onCreatorStartGame() {
       console.log("start game...");
-      socket.emit("creator start to game", {
+      this.socket.emit("creator start to game", {
         roomID: this.roomID
       });
     },
@@ -202,7 +211,7 @@ export default {
       this.popupRoom = false;
       this.inGame = true;
       console.log("game started");
-      socket.emit("in game", {
+      this.socket.emit("in game", {
         socketID: this.socketID,
         roomID: this.roomID
       });

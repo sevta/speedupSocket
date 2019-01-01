@@ -48,7 +48,11 @@
 <script>
 export default {
   name: "game",
-  props: ["users", "socketId", "socket"],
+  props: {
+    users: Array,
+    socketId: String,
+    socket: Object
+  },
   data() {
     return {
       title: "gamesdf",
@@ -70,11 +74,10 @@ export default {
   },
   mounted() {
     this.extractWords();
-    console.log("socket", socket);
+    console.log("socket", this.socket);
   },
   computed: {
     avatarMove() {
-      // console.log(user);
       return {
         color: "red",
         fontSize: "13px",
@@ -85,7 +88,6 @@ export default {
   },
   watch: {
     typedText(value) {
-      // this.checkWord();
       this.checkByArray();
       this.userMovement();
     }
@@ -130,6 +132,7 @@ export default {
         this.isCorrect = false;
       }
       for (let i = 0; i < this.typedText.length; i++) {
+        console.log("index is ", i);
         if (this.step === this.quotesSplit.length - 1) {
           // this is winner
         }
@@ -156,39 +159,38 @@ export default {
       }
     },
     checkWord() {
-      this.restText = this.quotes.slice(
-        this.typedText.length,
-        this.quotes.length
-      );
-      if (this.typedText === "") {
-        this.correctText = "";
-        this.typoText = "";
-        this.step = 0;
-        this.isTypo = false;
-        this.isCorrect = false;
-      }
-      for (let i = 0; i < this.typedText.length; i++) {
-        this.step = i;
-        if (this.typedText[i] !== this.quotes[i]) {
-          this.typoIndex = i;
-          this.isTypo = true;
-          console.log("step ", this.step);
-          console.log("typo", this.typoIndex);
-          console.log(this.quotes.slice(this.typoIndex, this.typedText.length));
-          this.typoText = this.quotes.slice(
-            this.typoIndex,
-            this.typedText.length
-          );
-
-          break;
-        }
-        this.isTypo = false;
-        this.isCorrect = true;
-        console.log("correct");
-        console.log("step ", this.step);
-        this.correctText = this.quotes.slice(0, i + 1);
-        console.log("rest", this.restText);
-      }
+      // this.restText = this.quotes.slice(
+      //   this.typedText.length,
+      //   this.quotes.length
+      // );
+      // if (this.typedText === "") {
+      //   this.correctText = "";
+      //   this.typoText = "";
+      //   this.step = 0;
+      //   this.isTypo = false;
+      //   this.isCorrect = false;
+      // }
+      // for (let i = 0; i < this.typedText.length; i++) {
+      //   this.step = i;
+      //   if (this.typedText[i] !== this.quotes[i]) {
+      //     this.typoIndex = i;
+      //     this.isTypo = true;
+      //     console.log("step ", this.step);
+      //     console.log("typo", this.typoIndex);
+      //     console.log(this.quotes.slice(this.typoIndex, this.typedText.length));
+      //     this.typoText = this.quotes.slice(
+      //       this.typoIndex,
+      //       this.typedText.length
+      //     );
+      //     break;
+      //   }
+      //   this.isTypo = false;
+      //   this.isCorrect = true;
+      //   console.log("correct");
+      //   console.log("step ", this.step);
+      //   this.correctText = this.quotes.slice(0, i + 1);
+      //   console.log("rest", this.restText);
+      // }
     }
   }
 };

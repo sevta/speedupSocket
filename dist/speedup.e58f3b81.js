@@ -90067,6 +90067,8 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
 
 function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
 
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
 function _get(target, property, receiver) { if (typeof Reflect !== "undefined" && Reflect.get) { _get = Reflect.get; } else { _get = function _get(target, property, receiver) { var base = _superPropBase(target, property); if (!base) return; var desc = Object.getOwnPropertyDescriptor(base, property); if (desc.get) { return desc.get.call(receiver); } return desc.value; }; } return _get(target, property, receiver || target); }
 
 function _superPropBase(object, property) { while (!Object.prototype.hasOwnProperty.call(object, property)) { object = _getPrototypeOf(object); if (object === null) break; } return object; }
@@ -90076,8 +90078,6 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
 
 function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; var ownKeys = Object.keys(source); if (typeof Object.getOwnPropertySymbols === 'function') { ownKeys = ownKeys.concat(Object.getOwnPropertySymbols(source).filter(function (sym) { return Object.getOwnPropertyDescriptor(source, sym).enumerable; })); } ownKeys.forEach(function (key) { _defineProperty(target, key, source[key]); }); } return target; }
 
@@ -90116,6 +90116,8 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
         roomFound: false,
         isUserReady: false,
         isGameReady: false,
+        debug: true,
+        quotes: "tesi makan ayam",
         usersInRoom: _toConsumableArray(Array(4).fill("waiting"))
       };
       this.data = Object.assign({}, this.data, props);
@@ -90150,8 +90152,64 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
         });
         (0, _jquery.default)(".input-room-code").on("input", function (e) {
           var value = e.target.value;
-          console.log(value);
           roomValue = value;
+        });
+
+        var quoteSplit = _toConsumableArray(this.data.quotes);
+
+        (0, _jquery.default)("#input-speedup").on("input", function (e) {
+          var value = e.target.value;
+          var typoIndex = -1;
+          var typoText = "";
+          var correctText = "";
+          var restText = "";
+          var correctIndex = -1;
+
+          if (value === "") {
+            (0, _jquery.default)(".rest-text").html("\n          ".concat(quoteSplit.map(function (text) {
+              return "\n            <span class=\"p-1\">".concat(text, "</span>\n          ");
+            }).join(""), "\n          "));
+          }
+
+          for (var i = 0; i < value.length; i++) {
+            restText = quoteSplit.slice(value.length, quoteSplit.length);
+            (0, _jquery.default)(".rest-text").html("\n          ".concat(restText.map(function (text) {
+              return "\n            <span class=\"p-1\">".concat(text, "</span>\n          ");
+            }).join(""), "\n        "));
+
+            if (value[i] !== quoteSplit[i]) {
+              typoIndex = i;
+              (0, _jquery.default)(".typo-text").show();
+
+              if (value === "") {
+                correctText = quoteSplit.slice(0, 0);
+                (0, _jquery.default)(".correct-text").html("\n              ".concat(correctText.map(function (text) {
+                  return "\n                <span class=\"p-1\">".concat(text, "</span>\n              ");
+                }).join(""), "\n            "));
+              }
+
+              typoText = quoteSplit.slice(typoIndex, value.length);
+              (0, _jquery.default)(".typo-text").html("\n            ".concat(typoText.map(function (text) {
+                return "\n              <span class=\"p-1\">".concat(text, "</span>\n            ");
+              }).join(""), "\n          "));
+              break;
+            }
+
+            (0, _jquery.default)(".correct-text").show();
+            correctIndex = i;
+            correctText = quoteSplit.slice(0, i + 1);
+            (0, _jquery.default)(".correct-text").html("\n            ".concat(correctText.map(function (text) {
+              return "\n              <span class=\"p-1\">".concat(text, "</span>\n            ");
+            }).join(""), "\n          "));
+          }
+
+          if (typoIndex == -1) {
+            (0, _jquery.default)(".typo-text").hide();
+          }
+
+          if (correctIndex == -1) {
+            (0, _jquery.default)(".correct-text").hide();
+          }
         });
       }
     }, {
@@ -90171,7 +90229,15 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
         (0, _jquery.default)(".speedup-popup").hide();
         (0, _jquery.default)(".input-room-code").hide();
         (0, _jquery.default)(".speedup-game-container").hide();
-        this.handleSocket();
+
+        if (!this.data.debug) {
+          this.handleSocket();
+        } else {
+          // $(".speedup-quotes").text(this.data.quotes);
+          console.log("in debug mode");
+          (0, _jquery.default)(".speedup-game-container").fadeIn();
+        }
+
         this.handleEvents();
         console.log("init room", this.data);
       }
@@ -90245,6 +90311,7 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
         });
         socket.on("start game", function () {
           console.log("game started");
+          (0, _jquery.default)(".speedup-quotes").text(_this2.data.quotes);
 
           _this2.startGame();
         });
@@ -90281,7 +90348,7 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
           (0, _jquery.default)(".user-list-container").html("\n          ".concat(_this2.data.usersInRoom.map(function (user) {
             return "\n              <div class=\"user-list\">".concat(user.username || "waiting", " ").concat(user.isReady ? "ready" : "", "</div>\n              ");
           }).join(""), " \n            <button class=\"btn-start bg-teal text-white py-2 px-4\">\n              start game\n            </button>\n            <button class=\"btn-ready bg-red text-white py-2 px-4\">\n              ready\n            </button>\n        "));
-          (0, _jquery.default)(".inner-speedup-game").html("\n          ".concat(_this2.data.usersInRoom.map(function (user) {
+          (0, _jquery.default)(".inner-speedup-game .user-list").html("\n          ".concat(_this2.data.usersInRoom.map(function (user) {
             return "\n            <div>".concat(user.username || "", "</div>\n          ");
           }).join(""), " \n        "));
 
@@ -90404,7 +90471,7 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
       _classCallCheck(this, Game);
 
       _this5 = _possibleConstructorReturn(this, _getPrototypeOf(Game).call(this));
-      console.log(_assertThisInitialized(_assertThisInitialized(_this5)));
+      console.log("game", _this5.data);
       return _this5;
     }
 
@@ -90414,92 +90481,23 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
         console.log("game socket");
       }
     }, {
+      key: "handleGameEvent",
+      value: function handleGameEvent() {}
+    }, {
       key: "init",
       value: function init() {
         _get(_getPrototypeOf(Game.prototype), "init", this).call(this);
 
         this.handleGameSocket();
+        this.handleGameEvent();
       }
     }]);
 
     return Game;
-  }(Room); // let speedup = new Speedup();
-
+  }(Room);
 
   var game = new Game();
-  game.init(); // speedup.init();
-  //   new Vue({
-  //     el: "#game",
-  //     data() {
-  //       return {
-  //         count: 0,
-  //         inGame: false,
-  //         popup: false,
-  //         popupRoom: false,
-  //         toggleJoin: false,
-  //         username: faker.name.findName(),
-  //         socketID: null,
-  //         roomID: null,
-  //         isCreatorRoom: false,
-  //         inRoom: false,
-  //         inGame: false,
-  //         roomFound: false,
-  //         isUserReady: false,
-  //         isGameReady: false,
-  //         usersInRoom: [...Array(4).fill("waiting")]
-  //       };
-  //     },
-  //     template: `
-  //       <div>
-  //         <popup-room
-  //           v-if="popupRoom"
-  //           :onClick="hidePopupRoom"
-  //           timer="30"
-  //           :users="usersInRoom"
-  //           roomCode="1234">
-  //         </popup-room>
-  //         <h1>hello {{ username }}</h1>
-  //         <input v-if="toggleJoin" type="text" placeholder="input room code" />
-  //         <div class="button-container">
-  //           <button class="bg-teal text-white p-2 btn-create" @click="createRoom">create</button>
-  //           <button class="bg-teal text-white p-2 btn-join" @click="joinRoom">join</button>
-  //         </div>
-  //       </div>
-  //     `,
-  //     mounted() {
-  //       this.handleSocket();
-  //     },
-  //     methods: {
-  //       handleSocket() {},
-  //       createRoom() {
-  //         this.popupRoom = true;
-  //       },
-  //       joinRoom() {
-  //         this.toggleJoin = !this.toggleJoin;
-  //       },
-  //       hidePopupRoom() {
-  //         this.popupRoom = false;
-  //       }
-  //     }
-  //   });
-  // });
-  // Vue.component("popup-room", {
-  //   props: ["onClick", "timer", "roomCode", "users"],
-  //   template: `
-  //     <div
-  //       class="speedup-popup bg-black fixed pin-y pin-x flex items-center justify-center"
-  //       @click="onClick"
-  //     >
-  //       <div
-  //         class="inner-speedup-popup w-auto bg-white p-4 flex items-center justify-center flex-col"
-  //       >
-  //         <h1>speedup</h1>
-  //         <div class="timer-room">{{timer}}</div>
-  //         <p class="room-code">roomcode is{{ roomCode }}</p>
-  //         <div class="user-list-container flex flex-col" v-for="user in users">{{user}}</div>
-  //       </div>
-  //     </div>
-  //   `
+  game.init();
 });
 },{"jquery":"../node_modules/jquery/dist/jquery.js","socket.io-client":"../node_modules/socket.io-client/lib/index.js","faker":"../node_modules/faker/index.js"}]},{},["jquerySpeedup/speedup.js"], null)
 //# sourceMappingURL=/speedup.e58f3b81.map

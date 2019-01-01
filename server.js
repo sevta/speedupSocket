@@ -76,7 +76,7 @@ class Room {
     // find creator room in all user status ready
     let creatorRoom = filterUserReady.filter(val => val.isCreator);
     // if user ready has 4 people tell to creator game is ready to play
-    if (filterUserReady.length >= 2 && filterUserReady.length >= 3) {
+    if (filterUserReady.length >= 2 && filterUserReady.length <= 3) {
       console.log("send to creator game is ready", creatorRoom);
       // emit to creator game is ready to play
       io.to(creatorRoom[0].socketID).emit("game is ready");
@@ -375,6 +375,8 @@ io.on("connection", socket => {
         console.log("room now", getRoom(roomID));
         delete rooms[roomID];
         socket.leave(roomID);
+
+        // it should be undefined
         console.log("room now", getRoom(roomID));
       } else {
         // tell to room his leave us  :(

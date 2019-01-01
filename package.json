@@ -22,13 +22,15 @@
     "react-dom": "^16.7.0-alpha.2",
     "socket.io": "^2.2.0",
     "socket.io-client": "^2.2.0",
-    "vue": "^2.5.21"
+    "vue": "^2.5.21",
+    "vue-socket.io": "^3.0.4"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",
     "@babel/plugin-proposal-class-properties": "^7.2.3",
     "@vue/component-compiler-utils": "^2.3.1",
     "cssnano": "^4.1.8",
+    "sass": "^1.15.2",
     "vue-template-compiler": "^2.5.21"
   }
 }

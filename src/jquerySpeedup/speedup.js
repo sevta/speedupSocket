@@ -17,6 +17,8 @@ $(document).ready(function() {
         roomFound: false,
         isUserReady: false,
         isGameReady: false,
+        debug: true,
+        quotes: "tesi makan ayam",
         usersInRoom: [...Array(4).fill("waiting")]
       };
       this.data = Object.assign({}, this.data, props);
@@ -50,8 +52,87 @@ $(document).ready(function() {
 
       $(".input-room-code").on("input", e => {
         let value = e.target.value;
-        console.log(value);
         roomValue = value;
+      });
+
+      let quoteSplit = [...this.data.quotes];
+      $("#input-speedup").on("input", e => {
+        let value = e.target.value;
+        let typoIndex = -1;
+        let typoText = "";
+        let correctText = "";
+        let restText = "";
+        let correctIndex = -1;
+
+        if (value === "") {
+          $(".rest-text").html(`
+          ${quoteSplit
+            .map(
+              text => `
+            <span class="p-1">${text}</span>
+          `
+            )
+            .join("")}
+          `);
+        }
+
+        for (let i = 0; i < value.length; i++) {
+          restText = quoteSplit.slice(value.length, quoteSplit.length);
+          $(".rest-text").html(`
+          ${restText
+            .map(
+              text => `
+            <span class="p-1">${text}</span>
+          `
+            )
+            .join("")}
+        `);
+          if (value[i] !== quoteSplit[i]) {
+            typoIndex = i;
+            $(".typo-text").show();
+            if (value === "") {
+              correctText = quoteSplit.slice(0, 0);
+              $(".correct-text").html(`
+              ${correctText
+                .map(
+                  text => `
+                <span class="p-1">${text}</span>
+              `
+                )
+                .join("")}
+            `);
+            }
+            typoText = quoteSplit.slice(typoIndex, value.length);
+            $(".typo-text").html(`
+            ${typoText
+              .map(
+                text => `
+              <span class="p-1">${text}</span>
+            `
+              )
+              .join("")}
+          `);
+            break;
+          }
+          $(".correct-text").show();
+          correctIndex = i;
+          correctText = quoteSplit.slice(0, i + 1);
+          $(".correct-text").html(`
+            ${correctText
+              .map(
+                text => `
+              <span class="p-1">${text}</span>
+            `
+              )
+              .join("")}
+          `);
+        }
+        if (typoIndex == -1) {
+          $(".typo-text").hide();
+        }
+        if (correctIndex == -1) {
+          $(".correct-text").hide();
+        }
       });
     }
 
@@ -68,7 +149,13 @@ $(document).ready(function() {
       $(".speedup-popup").hide();
       $(".input-room-code").hide();
       $(".speedup-game-container").hide();
-      this.handleSocket();
+      if (!this.data.debug) {
+        this.handleSocket();
+      } else {
+        // $(".speedup-quotes").text(this.data.quotes);
+        console.log("in debug mode");
+        $(".speedup-game-container").fadeIn();
+      }
       this.handleEvents();
       console.log("init room", this.data);
     }
@@ -136,6 +223,7 @@ $(document).ready(function() {
 
       socket.on("start game", () => {
         console.log("game started");
+        $(".speedup-quotes").text(this.data.quotes);
         this.startGame();
       });
 
@@ -196,7 +284,7 @@ $(document).ready(function() {
             </button>
         `);
 
-        $(".inner-speedup-game").html(`
+        $(".inner-speedup-game .user-list").html(`
           ${this.data.usersInRoom
             .map(
               user => `
@@ -303,95 +391,22 @@ $(document).ready(function() {
   class Game extends Room {
     constructor() {
       super();
-      console.log(this);
+      console.log("game", this.data);
     }
 
     handleGameSocket() {
       console.log("game socket");
     }
 
+    handleGameEvent() {}
+
     init() {
       super.init();
       this.handleGameSocket();
+      this.handleGameEvent();
     }
   }
 
-  // let speedup = new Speedup();
   let game = new Game();
   game.init();
-  // speedup.init();
-
-  //   new Vue({
-  //     el: "#game",
-  //     data() {
-  //       return {
-  //         count: 0,
-  //         inGame: false,
-  //         popup: false,
-  //         popupRoom: false,
-  //         toggleJoin: false,
-  //         username: faker.name.findName(),
-  //         socketID: null,
-  //         roomID: null,
-  //         isCreatorRoom: false,
-  //         inRoom: false,
-  //         inGame: false,
-  //         roomFound: false,
-  //         isUserReady: false,
-  //         isGameReady: false,
-  //         usersInRoom: [...Array(4).fill("waiting")]
-  //       };
-  //     },
-  //     template: `
-  //       <div>
-  //         <popup-room
-  //           v-if="popupRoom"
-  //           :onClick="hidePopupRoom"
-  //           timer="30"
-  //           :users="usersInRoom"
-  //           roomCode="1234">
-  //         </popup-room>
-  //         <h1>hello {{ username }}</h1>
-  //         <input v-if="toggleJoin" type="text" placeholder="input room code" />
-  //         <div class="button-container">
-  //           <button class="bg-teal text-white p-2 btn-create" @click="createRoom">create</button>
-  //           <button class="bg-teal text-white p-2 btn-join" @click="joinRoom">join</button>
-  //         </div>
-  //       </div>
-  //     `,
-  //     mounted() {
-  //       this.handleSocket();
-  //     },
-  //     methods: {
-  //       handleSocket() {},
-  //       createRoom() {
-  //         this.popupRoom = true;
-  //       },
-  //       joinRoom() {
-  //         this.toggleJoin = !this.toggleJoin;
-  //       },
-  //       hidePopupRoom() {
-  //         this.popupRoom = false;
-  //       }
-  //     }
-  //   });
-  // });
-
-  // Vue.component("popup-room", {
-  //   props: ["onClick", "timer", "roomCode", "users"],
-  //   template: `
-  //     <div
-  //       class="speedup-popup bg-black fixed pin-y pin-x flex items-center justify-center"
-  //       @click="onClick"
-  //     >
-  //       <div
-  //         class="inner-speedup-popup w-auto bg-white p-4 flex items-center justify-center flex-col"
-  //       >
-  //         <h1>speedup</h1>
-  //         <div class="timer-room">{{timer}}</div>
-  //         <p class="room-code">roomcode is{{ roomCode }}</p>
-  //         <div class="user-list-container flex flex-col" v-for="user in users">{{user}}</div>
-  //       </div>
-  //     </div>
-  //   `
 });

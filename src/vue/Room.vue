@@ -36,18 +36,15 @@
 <script>
 export default {
   name: "popupRoom",
-  props: [
-    "onbackdropclick",
-    "roomTimer",
-    "roomCode",
-    "users",
-    "socketId",
-    "onUserReady",
-    "isGameReady",
-    "onCreatorStartGame"
-  ],
-  data() {
-    return {};
+  props: {
+    onbackdropclick: Function,
+    roomTimer: Number,
+    roomCode: String,
+    users: Array,
+    socketId: String,
+    onUserReady: Function,
+    isGameReady: Boolean,
+    onCreatorStartGame: Function
   },
   mounted() {
     console.log("user in prop", this.users, this.roomCode, this.socketId);
